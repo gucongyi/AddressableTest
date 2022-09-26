@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using UnityEngine.UI;
 using System.Text;
+using UnityEngine.ResourceManagement.ResourceProviders;
 
 public class AddressableDownLoadManager : MonoBehaviour
 {
@@ -187,6 +188,9 @@ public class AddressableDownLoadManager : MonoBehaviour
     public IEnumerator CheckUpdateByLabel()
     {
         CleanLocalCatelogInfo();
+        //重定向下载,加载的url
+        Addressables.InternalIdTransformFunc = InternalIdTransformFunc;
+
 
         string key = "FirstDownload";
 
@@ -227,5 +231,22 @@ public class AddressableDownLoadManager : MonoBehaviour
             yield return downloadDependencies;
         }
     }
+    private string InternalIdTransformFunc(UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation location)
+    {
+        //判定是否是一个AB包的请求
+        if (location.Data is AssetBundleRequestOptions)
+        {
+            //PrimaryKey是AB包的名字
+            //path就是StreamingAssets/Bundles/AB包名.bundle,其中Bundles是自定义文件夹名字,发布应用程序时,复制的目录
+            var path = Path.Combine(Application.streamingAssetsPath, "Bundles", location.PrimaryKey);
+            if (File.Exists(path))
+            {
+                sb.Append($"=======InternalIdTransformFunc=========path：{path}\n");
+                return path;
+            }
+        }
+        return location.InternalId;
+    }
+
 
 }
